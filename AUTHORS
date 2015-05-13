@@ -1107,6 +1107,7 @@ Developers:
         
     milos1290
         Added Lerp for Vec3
+        Added ActionFloat
         
     perminovVS
         Optimize Vec3 and Vec2
@@ -1114,6 +1115,12 @@ Developers:
         
     qiutaoleo
         Added a feature to check case characters for filename on windows
+        
+    HueyPark
+        Fixed memory leak in HttpClient on iOS
+        
+    Dimon4eg
+        Fixed crash on AssetsManager
 
 Retired Core Developers:
     WenSheng Yang

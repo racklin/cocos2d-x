@@ -110,26 +110,26 @@ void PUParticle3D::process( float timeElapsed )
 
 PUParticle3D::PUParticle3D():
     particleEntityPtr(nullptr),
+    parentEmitter(nullptr),
     visualData(nullptr),
     particleType(PT_VISUAL),
-    timeToLive(DEFAULT_TTL),
-    totalTimeToLive(DEFAULT_TTL),
-    timeFraction(0.0f),
-    mass(DEFAULT_MASS),
-    eventFlags(0),
-    freezed(false),
     originalDirectionLength(0.0f),
-    originalScaledDirectionLength(0.0f),
     originalVelocity(0.0f),
-    parentEmitter(nullptr),
+    originalScaledDirectionLength(0.0f),
+    rotationAxis(Vec3::UNIT_Z),
     //color(Vec4::ONE),
     originalColor(Vec4::ONE),
     //zRotation(0.0f),
     zRotationSpeed(0.0f),
     rotationSpeed(0.0f),
-    rotationAxis(Vec3::UNIT_Z),
-    ownDimensions(false),
     radius(0.87f),
+    ownDimensions(false),
+    eventFlags(0),
+    freezed(false),
+    timeToLive(DEFAULT_TTL),
+    totalTimeToLive(DEFAULT_TTL),
+    timeFraction(0.0f),
+    mass(DEFAULT_MASS),
     textureAnimationTimeStep(0.1f),
     textureAnimationTimeStepCount(0.0f),
     textureCoordsCurrent(0),
@@ -176,13 +176,13 @@ PUParticleSystem3D::PUParticleSystem3D()
 , _prepared(false)
 , _poolPrepared(false)
 , _particleSystemScaleVelocity(1.0f)
+, _timeElapsedSinceStart(0.0f)
 , _defaultWidth(DEFAULT_WIDTH)
 , _defaultHeight(DEFAULT_HEIGHT)
 , _defaultDepth(DEFAULT_DEPTH)
 , _maxVelocity(DEFAULT_MAX_VELOCITY)
 , _maxVelocitySet(false)
 , _isMarkedForEmission(false)
-, _timeElapsedSinceStart(0.0f)
 , _parentParticleSystem(nullptr)
 {
     _particleQuota = DEFAULT_PARTICLE_QUOTA;
@@ -238,19 +238,35 @@ PUParticleSystem3D* PUParticleSystem3D::create()
 
 PUParticleSystem3D* PUParticleSystem3D::create( const std::string &filePath, const std::string &materialPath )
 {
-    std::string matfullPath = FileUtils::getInstance()->fullPathForFilename(materialPath);
-    convertToUnixStylePath(matfullPath);
-    PUMaterialCache::Instance()->loadMaterials(matfullPath);
-    PUParticleSystem3D* ps = PUParticleSystem3D::create();
-    std::string fullPath = FileUtils::getInstance()->fullPathForFilename(filePath);
-    convertToUnixStylePath(fullPath);
-    if (!ps->initSystem(fullPath)){
-        CC_SAFE_DELETE(ps);
+    PUParticleSystem3D *ret = new (std::nothrow) PUParticleSystem3D();
+    if (ret && ret->initWithFilePathAndMaterialPath(filePath, materialPath))
+    {
+        ret->autorelease();
+        return ret;
     }
-    return ps;
+    else
+    {
+        CC_SAFE_DELETE(ret);
+        return nullptr;
+    }
 }
 
 PUParticleSystem3D* PUParticleSystem3D::create( const std::string &filePath )
+{
+    PUParticleSystem3D *ret = new (std::nothrow) PUParticleSystem3D();
+    if (ret && ret->initWithFilePath(filePath))
+    {
+        ret->autorelease();
+        return ret;
+    }
+    else
+    {
+        CC_SAFE_DELETE(ret);
+        return nullptr;
+    }
+}
+
+bool PUParticleSystem3D::initWithFilePath( const std::string &filePath )
 {
     std::string fullPath = FileUtils::getInstance()->fullPathForFilename(filePath);
     convertToUnixStylePath(fullPath);
@@ -269,12 +285,24 @@ PUParticleSystem3D* PUParticleSystem3D::create( const std::string &filePath )
         PUMaterialCache::Instance()->loadMaterialsFromSearchPaths(materialFolder);
         loadedFolder.push_back(materialFolder);
     }
-    
-    PUParticleSystem3D* ps = PUParticleSystem3D::create();
-    if (!ps->initSystem(fullPath)){
-        CC_SAFE_DELETE(ps);
+
+    if (!initSystem(fullPath)){
+        return false;
     }
-    return ps;
+    return true;
+}
+
+bool PUParticleSystem3D::initWithFilePathAndMaterialPath( const std::string &filePath, const std::string &materialPath )
+{
+    std::string matfullPath = FileUtils::getInstance()->fullPathForFilename(materialPath);
+    convertToUnixStylePath(matfullPath);
+    PUMaterialCache::Instance()->loadMaterials(matfullPath);
+    std::string fullPath = FileUtils::getInstance()->fullPathForFilename(filePath);
+    convertToUnixStylePath(fullPath);
+    if (!initSystem(fullPath)){
+        return false;
+    }
+    return true;
 }
 
 void PUParticleSystem3D::startParticleSystem()

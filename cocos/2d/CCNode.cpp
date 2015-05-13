@@ -44,6 +44,7 @@ THE SOFTWARE.
 #include "2d/CCComponentContainer.h"
 #include "renderer/CCGLProgram.h"
 #include "renderer/CCGLProgramState.h"
+#include "renderer/CCMaterial.h"
 #include "math/TransformUtils.h"
 
 #include "deprecated/CCString.h"
@@ -833,6 +834,7 @@ void Node::setGLProgramState(cocos2d::GLProgramState *glProgramState)
     }
 }
 
+
 void Node::setGLProgram(GLProgram *glProgram)
 {
     if (_glProgramState == nullptr || (_glProgramState && _glProgramState->getGLProgram() != glProgram))
@@ -1312,6 +1314,9 @@ uint32_t Node::processParentFlags(const Mat4& parentTransform, uint32_t parentFl
             _normalizedPositionDirty = false;
         }
     }
+    
+    if (!isVisitableByVisitingCamera())
+        return parentFlags;
     
     uint32_t flags = parentFlags;
     flags |= (_transformUpdated ? FLAGS_TRANSFORM_DIRTY : 0);
